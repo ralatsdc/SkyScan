@@ -131,14 +131,14 @@ def coordinate_distance_3d(
     Returns:
         float -- Distance in meters
     """
-    R = 6371 # Radius of the earth in km
+    R = 6371  # Radius of the earth in km
     dLat = deg2rad(lat2 - lat1)
     dLon = deg2rad(lon2 - lon1)
     a = math.sin(dLat / 2) * math.sin(dLat / 2) + math.cos(deg2rad(lat1)) * math.cos(
         deg2rad(lat2)
     ) * math.sin(dLon / 2) * math.sin(dLon / 2)
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    d = R * c * 1000 #  Distance in m
+    d = R * c * 1000  #  Distance in m
     # return d
     # logging.info("Alt1: " + str(alt1) + " Alt2: " + str(alt2))
     alt_diff = abs(alt1 - alt2)
@@ -160,14 +160,14 @@ def coordinate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> f
     Returns:
         float -- Distance in meters
     """
-    R = 6371 # Radius of the earth in km
+    R = 6371  # Radius of the earth in km
     dLat = deg2rad(lat2 - lat1)
     dLon = deg2rad(lon2 - lon1)
     a = math.sin(dLat / 2) * math.sin(dLat / 2) + math.cos(deg2rad(lat1)) * math.cos(
         deg2rad(lat2)
     ) * math.sin(dLon / 2) * math.sin(dLon / 2)
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    d = R * c * 1000 #  Distance in m
+    d = R * c * 1000  #  Distance in m
     return d
 
 
@@ -274,9 +274,9 @@ def calc_travel_3d(current_plane, lead_s: float):
     # alt_age_s = alt_age.total_seconds() + lead_s
     alt_age_s = lead_s
 
-    R = float(6371) # Radius of the Earth in km
+    R = float(6371)  # Radius of the Earth in km
     brng = math.radians(heading)  # Bearing is 90 degrees converted to radians.
-    d = float((lat_lon_age_s * speed_mps) / 1000.0) # Distance in km
+    d = float((lat_lon_age_s * speed_mps) / 1000.0)  # Distance in km
 
     lat1 = math.radians(lat)  # Current lat point converted to radians
     lon1 = math.radians(lon)  # Current long point converted to radians
@@ -474,67 +474,40 @@ def compute_r_XYZ(d_lambda, d_varphi, o_h):
     return r_XYZ
 
 
-def as_quaternion(s, v):
-    """Construct a quaternion given a scalar and vector.
+def compute_great_circle_distance(varphi_1, lambda_1, varphi_2, lambda_2):
+    """Use the haversine formula to compute the great-circle distance
+    between two points on a sphere given their longitudes and
+    latitudes.
+
+    See:
+        https://en.wikipedia.org/wiki/Haversine_formula
 
     Parameters
     ----------
-    s : float
-        A scalar value
-    v : list or numpy.ndarray
-        A vector of floats
+    varphi_1 : float
+        Latitude [deg]
+    lambda_1 : float
+        Longitude [deg]
+    varphi_2 : float
+        Latitude [deg]
+    lambda_2 : float
+        Longitude [deg]
 
     Returns
     -------
-    quaternion.quaternion
-        A quaternion with the specified scalar and vector parts
+    float
+        Great-circle distance [m]
+
     """
-    if type(s) != float:
-        raise Exception("Scalar part is not a float")
-    if len(v) != 3 or not all([type(e) == float or type(e) == np.float64 for e in v]):
-        raise Exception("Vector part is not an iterable of three floats")
-    return np.quaternion(s, v[0], v[1], v[2])
-
-
-def as_rotation_quaternion(d_omega, u):
-    """Construct a rotation quaternion given an angle and direction of
-    rotation.
-
-    Parameters
-    ----------
-    d_omega : float
-        An angle [deg]
-    u : list or numpy.ndarray
-        A vector of floats
-
-    Returns
-    -------
-    quaternion.quaternion
-        A rotation quaternion with the specified angle and direction
-    """
-    if type(d_omega) != float:
-        raise Exception("Angle is not a float")
-    if len(u) != 3 or not all([type(e) == float or type(e) == np.float64 for e in u]):
-        raise Exception("Vector part is not an iterable of three floats")
-    r_omega = math.radians(d_omega)
-    v = [math.sin(r_omega / 2) * e for e in u]
-    return np.quaternion(math.cos(r_omega / 2), v[0], v[1], v[2])
-
-
-def as_vector(q):
-    """Return the vector part of a quaternion, provided the scalar
-    part is nearly zero.
-
-    Parameters
-    ----------
-    q : quaternion.quaternion
-        A vector quaternion
-
-    Returns
-    -------
-    numpy.ndarray
-       A vector of floats
-    """
-    if math.fabs(q.w) > 1e-12:
-        raise Exception("Quaternion is not a vector quaternion")
-    return np.array([q.x, q.y, q.z])
+    return (
+        2
+        * R_OPLUS
+        * math.asin(
+            math.sqrt(
+                math.sin(math.radians((varphi_2 - varphi_1) / 2.0)) ** 2
+                + math.cos(math.radians(varphi_1))
+                * math.cos(math.radians(varphi_2))
+                * math.sin(math.radians((lambda_2 - lambda_1) / 2.0)) ** 2
+            )
+        )
+    )

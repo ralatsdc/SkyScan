@@ -24,6 +24,7 @@ from requests.auth import HTTPDigestAuth
 import paho.mqtt.client as mqtt
 from sensecam_control import vapix_control  # , vapix_config
 
+from Quaternion import Quaternion
 import utils
 
 # Logging configuration
@@ -291,37 +292,37 @@ def compute_rotations(e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, rho, tau):
     e_w_XYZ = e_z_XYZ
 
     # Construct the yaw rotation quaternion
-    q_alpha = utils.as_rotation_quaternion(alpha, -e_w_XYZ)
+    q_alpha = Quaternion.as_rotation_quaternion(alpha, -e_w_XYZ)
 
     # Construct the pitch rotation quaternion
-    e_u_XYZ_alpha = utils.as_vector(
-        q_alpha * utils.as_quaternion(0.0, e_u_XYZ) * q_alpha.conjugate()
+    e_u_XYZ_alpha = Quaternion.as_vector(
+        q_alpha * Quaternion.as_quaternion(0.0, e_u_XYZ) * q_alpha.conjugate()
     )
-    q_beta = utils.as_rotation_quaternion(beta, e_u_XYZ_alpha)
+    q_beta = Quaternion.as_rotation_quaternion(beta, e_u_XYZ_alpha)
 
     # Construct the roll rotation quaternion
     q_beta_alpha = q_beta * q_alpha
-    e_v_XYZ_beta_alpha = utils.as_vector(
-        q_beta_alpha * utils.as_quaternion(0.0, e_v_XYZ) * q_beta_alpha.conjugate()
+    e_v_XYZ_beta_alpha = Quaternion.as_vector(
+        q_beta_alpha * Quaternion.as_quaternion(0.0, e_v_XYZ) * q_beta_alpha.conjugate()
     )
-    q_gamma = utils.as_rotation_quaternion(gamma, e_v_XYZ_beta_alpha)
+    q_gamma = Quaternion.as_rotation_quaternion(gamma, e_v_XYZ_beta_alpha)
 
     # Compute the orthogonal transformation matrix from the XYZ to the
     # uvw coordinate system
     q_gamma_beta_alpha = q_gamma * q_beta_alpha
-    e_u_XYZ_gamma_beta_alpha = utils.as_vector(
+    e_u_XYZ_gamma_beta_alpha = Quaternion.as_vector(
         q_gamma_beta_alpha
-        * utils.as_quaternion(0.0, e_u_XYZ)
+        * Quaternion.as_quaternion(0.0, e_u_XYZ)
         * q_gamma_beta_alpha.conjugate()
     )
-    e_v_XYZ_gamma_beta_alpha = utils.as_vector(
+    e_v_XYZ_gamma_beta_alpha = Quaternion.as_vector(
         q_gamma_beta_alpha
-        * utils.as_quaternion(0.0, e_v_XYZ)
+        * Quaternion.as_quaternion(0.0, e_v_XYZ)
         * q_gamma_beta_alpha.conjugate()
     )
-    e_w_XYZ_gamma_beta_alpha = utils.as_vector(
+    e_w_XYZ_gamma_beta_alpha = Quaternion.as_vector(
         q_gamma_beta_alpha
-        * utils.as_quaternion(0.0, e_w_XYZ)
+        * Quaternion.as_quaternion(0.0, e_w_XYZ)
         * q_gamma_beta_alpha.conjugate()
     )
     E_XYZ_to_uvw = np.row_stack(
@@ -335,38 +336,38 @@ def compute_rotations(e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, rho, tau):
     e_t_XYZ = e_w_XYZ
 
     # Construct the pan rotation quaternion
-    e_t_XYZ_gamma_beta_alpha = utils.as_vector(
+    e_t_XYZ_gamma_beta_alpha = Quaternion.as_vector(
         q_gamma_beta_alpha
-        * utils.as_quaternion(0.0, e_t_XYZ)
+        * Quaternion.as_quaternion(0.0, e_t_XYZ)
         * q_gamma_beta_alpha.conjugate()
     )
-    q_rho = utils.as_rotation_quaternion(rho, -e_t_XYZ_gamma_beta_alpha)
+    q_rho = Quaternion.as_rotation_quaternion(rho, -e_t_XYZ_gamma_beta_alpha)
 
     # Construct the tilt rotation quaternion
     q_rho_gamma_beta_alpha = q_rho * q_gamma_beta_alpha
-    e_r_XYZ_rho_gamma_beta_alpha = utils.as_vector(
+    e_r_XYZ_rho_gamma_beta_alpha = Quaternion.as_vector(
         q_rho_gamma_beta_alpha
-        * utils.as_quaternion(0.0, e_r_XYZ)
+        * Quaternion.as_quaternion(0.0, e_r_XYZ)
         * q_rho_gamma_beta_alpha.conjugate()
     )
-    q_tau = utils.as_rotation_quaternion(tau, e_r_XYZ_rho_gamma_beta_alpha)
+    q_tau = Quaternion.as_rotation_quaternion(tau, e_r_XYZ_rho_gamma_beta_alpha)
 
     # Compute the orthogonal transformation matrix from the XYZ to the
     # rst coordinate system
     q_tau_rho_gamma_beta_alpha = q_tau * q_rho_gamma_beta_alpha
-    e_r_XYZ_tau_rho_gamma_beta_alpha = utils.as_vector(
+    e_r_XYZ_tau_rho_gamma_beta_alpha = Quaternion.as_vector(
         q_tau_rho_gamma_beta_alpha
-        * utils.as_quaternion(0.0, e_r_XYZ)
+        * Quaternion.as_quaternion(0.0, e_r_XYZ)
         * q_tau_rho_gamma_beta_alpha.conjugate()
     )
-    e_s_XYZ_tau_rho_gamma_beta_alpha = utils.as_vector(
+    e_s_XYZ_tau_rho_gamma_beta_alpha = Quaternion.as_vector(
         q_tau_rho_gamma_beta_alpha
-        * utils.as_quaternion(0.0, e_s_XYZ)
+        * Quaternion.as_quaternion(0.0, e_s_XYZ)
         * q_tau_rho_gamma_beta_alpha.conjugate()
     )
-    e_t_XYZ_tau_rho_gamma_beta_alpha = utils.as_vector(
+    e_t_XYZ_tau_rho_gamma_beta_alpha = Quaternion.as_vector(
         q_tau_rho_gamma_beta_alpha
-        * utils.as_quaternion(0.0, e_t_XYZ)
+        * Quaternion.as_quaternion(0.0, e_t_XYZ)
         * q_tau_rho_gamma_beta_alpha.conjugate()
     )
     E_XYZ_to_rst = np.row_stack(
@@ -443,16 +444,14 @@ def calculateCameraPositionB():
     distance3d = np.linalg.norm(r_ENz_a_1_t)
 
     # Compute the distance between the aircraft and the tripod along
-    # the surface of the Earth
-    geod = Geodesic.WGS84
-    g = geod.Inverse(
+    # the surface of a spherical Earth
+    distance2d = utils.compute_great_circle_distance(
         t_varphi,
         t_lambda,
         a_varphi,
         a_lambda,
-    )
-    distance2d = g["s12"]  # [m]
-
+    )  # [m]
+    
     # Compute the bearing from north of the aircraft from the tripod
     bearing = math.degrees(math.atan2(r_ENz_a_1_t[0], r_ENz_a_1_t[1]))
 
