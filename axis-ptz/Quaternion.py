@@ -1,65 +1,41 @@
 import math
 
 import numpy as np
+import numpy.linalg.linalg
 
 from Vector import Vector
 
 
 class Quaternion:
-    def __init__(self, a, b, c, d):
+    def __init__(self, a):
         self.a = a
-        self.b = b
-        self.c = c
-        self.d = d
 
     def get_scalar(self):
-        return self.a
+        return self.a[0]
 
     def get_vector(self):
-        return Vector(self.b, self.c, self.d)
+        return self.a[1:]
 
     def conjugate(self):
-        return Quaternion(self.a, -self.b, -self.c, -self.d)
+        return Quaternion(np.append(self.a[0], -self.a[1:]))
 
     def norm(self):
-        return math.sqrt(self.a**2 + self.b**2 + self.c**2 + self.d**2)
+        return numpy.linalg.norm(self.a)
 
     def __sub__(self, other):
-        """
-        if type(other) is not Quaternion:
-            raise TypeError("Only Quaternions can be subtracted from Quaternions")
-        """
-        return Quaternion(
-            self.a - other.a,
-            self.b - other.b,
-            self.c - other.c,
-            self.d - other.d,
-        )
+        return Quaternion(self.a - other.a)
 
     def __mul__(self, other):
-        """
-        if type(other) is not Quaternion:
-            raise TypeError("Quaternions can only be multiplied by Quaternions")
-        """
-        self_s = float(self.get_scalar())
-        other_s = float(other.get_scalar())
+        self_s = self.get_scalar()
+        other_s = other.get_scalar()
         self_v = self.get_vector()
         other_v = other.get_vector()
-        s = self_s * other_s - self_v.dot(other_v)
-        v = other_v.smul(self_s) + self_v.smul(other_s) + self_v.cross(other_v)
-        return Quaternion(s, v.b, v.c, v.d)
+        s = self_s * other_s - np.dot(self_v, other_v)
+        v = self_s * other_v + other_s * self_v + np.cross(self_v, other_v)
+        return Quaternion(np.append(s, v))
 
     def __eq__(self, other):
-        """
-        if type(other) is not Quaternion:
-            raise TypeError("Quaternions can only be compared to Quaternions")
-        """
-        return (
-            self.a == other.a
-            and self.b == other.b
-            and self.c == other.c
-            and self.d == other.d
-        )
+        return np.equal(self.a, other.a).all()
 
     @staticmethod
     def as_quaternion(s, v):
@@ -85,7 +61,7 @@ class Quaternion:
         ):
             raise Exception("Vector part is not an iterable of three floats")
         """
-        return Quaternion(s, v[0], v[1], v[2])
+        return Quaternion(np.append(s, v))
 
     @staticmethod
     def as_rotation_quaternion(d_omega, u):
@@ -114,7 +90,7 @@ class Quaternion:
         """
         r_omega = math.radians(d_omega)
         v = [math.sin(r_omega / 2) * e for e in u]
-        return Quaternion(math.cos(r_omega / 2), v[0], v[1], v[2])
+        return Quaternion(np.array([math.cos(r_omega / 2), v[0], v[1], v[2]]))
 
     @staticmethod
     def as_vector(q):
@@ -131,6 +107,6 @@ class Quaternion:
         numpy.ndarray
             A vector of floats
         """
-        if math.fabs(q.a) > 1e-12:
+        if math.fabs(q.a[0]) > 1e-12:
             raise Exception("Quaternion is not a vector quaternion")
-        return np.array([q.b, q.c, q.d])
+        return q.get_vector()
