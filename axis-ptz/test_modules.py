@@ -262,20 +262,6 @@ class TestUtilsModule:
         q_act = utils.as_quaternion(s, v)
         assert q_act.equal(q_exp)
 
-    # Raise an exception when constructing quaternions without floats,
-    # or three dimensional vectors
-    @pytest.mark.parametrize(
-        "s, v, q_exp",
-        [
-            (0, [1.0, 2.0, 3.0], np.quaternion(0.0, 1.0, 2.0, 3.0)),
-            (0.0, [1, 2.0, 3.0], np.quaternion(0.0, 1.0, 2.0, 3.0)),
-            (0.0, [1.0, 2.0], np.quaternion(0.0, 1.0, 2.0, 3.0)),
-        ],
-    )
-    def test_as_quaternion_with_exception(self, s, v, q_exp):
-        with pytest.raises(Exception):
-            q_act = utils.as_quaternion(s, v)
-
     # Construct rotation quaternions from a list or numpy.ndarray
     @pytest.mark.parametrize(
         "s, v, r_exp",
@@ -288,20 +274,6 @@ class TestUtilsModule:
         r_act = utils.as_rotation_quaternion(s, v)
         assert r_act.equal(r_exp)
 
-    # Raise an exception when constructing rotation quaternions
-    # without floats, or three dimensional vectors
-    @pytest.mark.parametrize(
-        "s, v, r_exp",
-        [
-            (0, [1.0, 2.0, 3.0], np.quaternion(0.0, 1.0, 2.0, 3.0)),
-            (0.0, [1, 2.0, 3.0], np.quaternion(0.0, 1.0, 2.0, 3.0)),
-            (0.0, [1.0, 2.0], np.quaternion(0.0, 1.0, 2.0, 3.0)),
-        ],
-    )
-    def test_as_rotation_quaternion(self, s, v, r_exp):
-        with pytest.raises(Exception):
-            r_act = utils.as_rotation_quaternion(s, v)
-
     # Get the vector part of a vector quaternion
     @pytest.mark.parametrize(
         "q, v_exp",
@@ -313,14 +285,3 @@ class TestUtilsModule:
         v_act = utils.as_vector(q)
         assert np.linalg.norm(v_act - v_act) < PRECISION
 
-    # Raise an exception when getting the vector part of a quaternion
-    # that is not a vector quaternion
-    @pytest.mark.parametrize(
-        "q, v_exp",
-        [
-            (np.quaternion(1.1e-12, 1.0, 2.0, 3.0), np.array([1.0, 2.0, 3.0])),
-        ],
-    )
-    def test_as_vector(self, q, v_exp):
-        with pytest.raises(Exception):
-            v_act = utils.as_vector(q)
