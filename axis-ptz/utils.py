@@ -489,10 +489,6 @@ def as_quaternion(s, v):
     quaternion.quaternion
         A quaternion with the specified scalar and vector parts
     """
-    if type(s) != float:
-        raise Exception("Scalar part is not a float")
-    if len(v) != 3 or not all([type(e) == float or type(e) == np.float64 for e in v]):
-        raise Exception("Vector part is not an iterable of three floats")
     return np.quaternion(s, v[0], v[1], v[2])
 
 
@@ -512,10 +508,6 @@ def as_rotation_quaternion(d_omega, u):
     quaternion.quaternion
         A rotation quaternion with the specified angle and direction
     """
-    if type(d_omega) != float:
-        raise Exception("Angle is not a float")
-    if len(u) != 3 or not all([type(e) == float or type(e) == np.float64 for e in u]):
-        raise Exception("Vector part is not an iterable of three floats")
     r_omega = math.radians(d_omega)
     v = [math.sin(r_omega / 2) * e for e in u]
     return np.quaternion(math.cos(r_omega / 2), v[0], v[1], v[2])
