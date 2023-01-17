@@ -13,6 +13,7 @@ PRECISION = 1e-12
 RELATIVE_DIFFERENCE = 2  # %
 ANGULAR_DIFFERENCE = 1  # [deg]
 
+
 class TestCameraModule:
     """Test construction of rotations and calculation of camera
     pointing."""
@@ -35,22 +36,22 @@ class TestCameraModule:
 
         # Perform some mental rotation gymnastics (hint: use paper)
         q_alpha_exp = utils.as_rotation_quaternion(
-            90.0, [0.0, 0.0, -1.0]
+            90.0, np.array([0.0, 0.0, -1.0])
         )  # About -w or -Z
         q_beta_exp = utils.as_rotation_quaternion(
-            90.0, [0.0, -1.0, 0.0]
+            90.0, np.array([0.0, -1.0, 0.0])
         )  # About u_alpha or -Y
         q_gamma_exp = utils.as_rotation_quaternion(
-            90.0, [0.0, 0.0, 1.0]
+            90.0, np.array([0.0, 0.0, 1.0])
         )  # About v_beta_alpha or Z
         E_XYZ_to_uvw_exp = np.array(
             [[1.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, -1.0, 0.0]]  # [X, Z, -Y]
         )
         q_rho_exp = utils.as_rotation_quaternion(
-            90.0, [0.0, 1.0, 0.0]
+            90.0, np.array([0.0, 1.0, 0.0])
         )  # About -t_gamma_beta_alpha or Y
         q_tau_exp = utils.as_rotation_quaternion(
-            90.0, [0.0, 0.0, -1.0]
+            90.0, np.array([0.0, 0.0, -1.0])
         )  # About r_rho_gamma_beta_alpha or -Z
         E_XYZ_to_rst_exp = np.array(
             [[0.0, 0.0, -1.0], [0.0, -1.0, 0.0], [-1.0, 0.0, 0.0]]  # [-Z, -N, -E]
@@ -67,10 +68,6 @@ class TestCameraModule:
         ) = camera.compute_rotations(
             e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, rho, tau
         )
-
-        def qnorm(q):
-            """Compute the quaternion norm."""
-            return math.sqrt((q * q.conjugate()).w)
 
         assert np.linalg.norm(q_alpha_act - q_alpha_exp) < PRECISION
         assert np.linalg.norm(q_beta_act - q_beta_exp) < PRECISION
@@ -266,9 +263,7 @@ class TestUtilsModule:
     @pytest.mark.parametrize(
         "s, v, r_exp",
         [
-            (0.0, [1.0, 2.0, 3.0], np.array([1.0, 0.0, 0.0, 0.0])),
             (0.0, np.array([1.0, 2.0, 3.0]), np.array([1.0, 0.0, 0.0, 0.0])),
-            (180.0, [1.0, 2.0, 3.0], np.array([0.0, 1.0, 2.0, 3.0])),
             (180.0, np.array([1.0, 2.0, 3.0]), np.array([0.0, 1.0, 2.0, 3.0])),
         ],
     )
@@ -299,37 +294,55 @@ class TestUtilsModule:
         assert np.equal(q_act, q_exp).any()
 
     # Multiply quaternions
-    @pytest.mark.parametrize(
-        "q, q_exp",
-        [
-            (np.array([0.0, 1.0, 2.0, 3.0]), np.array([0.0, -1.0, -2.0, -3.0])),
-        ],
-    )
-    def test_multiply(self, q, q_exp):
-        # TODO: Complete
-        q_act = utils.conjugate(q)
-        assert np.equal(q_act, q_exp).any()
+    def test_multiply(self):
+        p = np.array([2.0, 3.0, 4.0, 5.0])
+        q = np.array([3.0, 4.0, 5.0, 6.0])
+        r_exp = np.array([-56.0, 16.0, 24.0, 26.0])
+        r_act = utils.multiply(p, q)
+        assert np.equal(r_act, r_exp).any()
+
+        # Test using external package
+        r_npq = np.quaternion(2.0, 3.0, 4.0, 5.0) * np.quaternion(3.0, 4.0, 5.0, 6.0)
+        assert (
+            r_act[0] == r_npq.w
+            and r_act[1] == r_npq.x
+            and r_act[2] == r_npq.y
+            and r_act[3] == r_npq.z
+        )
 
     # Rotate a vector by a rotation quaternion
     @pytest.mark.parametrize(
         "v, q, r_exp",
         [
-            (np.array([0.0, 1.0, 2.0, 3.0]), np.array([0.0, -1.0, -2.0, -3.0])),
+            (
+                    np.array([1.0, 0.0, 0.0]),
+                    utils.as_rotation_quaternion(90, np.array([0.0, 0.0, 1.0])),
+                    np.array([0.0, 1.0, 0.0]),
+            ),
+            (
+                    np.array([0.0, 1.0, 0.0]),
+                    utils.as_rotation_quaternion(90, np.array([1.0, 0.0, 0.0])),
+                    np.array([0.0, 0.0, 1.0]),
+            ),
+            (
+                    np.array([0.0, 0.0, 1.0]),
+                    utils.as_rotation_quaternion(90, np.array([-1.0, 0.0, 0.0])),
+                    np.array([0.0, 1.0, 0.0]),
+            ),
         ],
     )
-    def test_rotate(self, q, q_exp):
-        # TODO: Complete
-        q_act = utils.conjugate(q)
-        assert np.equal(q_act, q_exp).any()
+    def test_rotate(self, v, q, r_exp):
+        r_act = utils.rotate(v, q)
+        assert np.equal(r_act, r_exp).any()
 
     # Compute the great-circle distance between two points on a sphere
     @pytest.mark.parametrize(
         "varphi_1, lambda_1, varphi_2, lambda_2, d_exp",
         [
-            (np.array([0.0, 1.0, 2.0, 3.0]), np.array([0.0, -1.0, -2.0, -3.0])),
+            (0.0, 0.0, 0.0, 90.0, math.pi * utils.R_OPLUS / 2.0),
+            (0.0, 0.0, 90.0, 0.0, math.pi * utils.R_OPLUS / 2.0),
         ],
     )
-    def test_great_circle_distance(self, q, q_exp):
-        # TODO: Complete
-        q_act = utils.conjugate(q)
-        assert np.equal(q_act, q_exp).any()
+    def test_great_circle_distance(self, varphi_1, lambda_1, varphi_2, lambda_2, d_exp):
+        d_act = utils.compute_great_circle_distance(varphi_1, lambda_1, varphi_2, lambda_2)
+        assert math.fabs((d_act - d_exp) / d_exp) < PRECISION

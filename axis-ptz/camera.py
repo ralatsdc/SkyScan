@@ -120,7 +120,7 @@ def get_jpeg_request():  # 5.2.4.1
     }
     global args
 
-    url = 'http://' + args.axis_ip + '/axis-cgi/jpg/image.cgi'
+    url = "http://" + args.axis_ip + "/axis-cgi/jpg/image.cgi"
     start_time = datetime.now()
     try:
         resp = requests.get(
@@ -137,7 +137,7 @@ def get_jpeg_request():  # 5.2.4.1
     if resp.status_code == 200:
         captureDir = None
 
-        if args.flat_file_structure: 
+        if args.flat_file_structure:
             captureDir = "capture/"
         else:
             captureDir = "capture/{}".format(currentPlane["type"])
@@ -294,36 +294,20 @@ def compute_rotations(e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, rho, tau):
     q_alpha = utils.as_rotation_quaternion(alpha, -e_w_XYZ)
 
     # Construct the pitch rotation quaternion
-    e_u_XYZ_alpha = utils.as_vector(
-        q_alpha * utils.as_quaternion(0.0, e_u_XYZ) * utils.conjugate(q_alpha)
-    )
+    e_u_XYZ_alpha = utils.rotate(e_u_XYZ, q_alpha)
     q_beta = utils.as_rotation_quaternion(beta, e_u_XYZ_alpha)
 
     # Construct the roll rotation quaternion
-    q_beta_alpha = q_beta * q_alpha
-    e_v_XYZ_beta_alpha = utils.as_vector(
-        q_beta_alpha * utils.as_quaternion(0.0, e_v_XYZ) * utils.conjugate(q_beta_alpha)
-    )
+    q_beta_alpha = utils.multiply(q_beta, q_alpha)
+    e_v_XYZ_beta_alpha = utils.rotate(e_v_XYZ, q_beta_alpha)
     q_gamma = utils.as_rotation_quaternion(gamma, e_v_XYZ_beta_alpha)
 
     # Compute the orthogonal transformation matrix from the XYZ to the
     # uvw coordinate system
-    q_gamma_beta_alpha = q_gamma * q_beta_alpha
-    e_u_XYZ_gamma_beta_alpha = utils.as_vector(
-        q_gamma_beta_alpha
-        * utils.as_quaternion(0.0, e_u_XYZ)
-        * utils.conjugate(q_gamma_beta_alpha)
-    )
-    e_v_XYZ_gamma_beta_alpha = utils.as_vector(
-        q_gamma_beta_alpha
-        * utils.as_quaternion(0.0, e_v_XYZ)
-        * utils.conjugate(q_gamma_beta_alpha)
-    )
-    e_w_XYZ_gamma_beta_alpha = utils.as_vector(
-        q_gamma_beta_alpha
-        * utils.as_quaternion(0.0, e_w_XYZ)
-        * utils.conjugate(q_gamma_beta_alpha)
-    )
+    q_gamma_beta_alpha = utils.multiply(q_gamma, q_beta_alpha)
+    e_u_XYZ_gamma_beta_alpha = utils.rotate(e_u_XYZ, q_gamma_beta_alpha)
+    e_v_XYZ_gamma_beta_alpha = utils.rotate(e_v_XYZ, q_gamma_beta_alpha)
+    e_w_XYZ_gamma_beta_alpha = utils.rotate(e_w_XYZ, q_gamma_beta_alpha)
     E_XYZ_to_uvw = np.row_stack(
         (e_u_XYZ_gamma_beta_alpha, e_v_XYZ_gamma_beta_alpha, e_w_XYZ_gamma_beta_alpha)
     )
@@ -335,40 +319,20 @@ def compute_rotations(e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, rho, tau):
     e_t_XYZ = e_w_XYZ
 
     # Construct the pan rotation quaternion
-    e_t_XYZ_gamma_beta_alpha = utils.as_vector(
-        q_gamma_beta_alpha
-        * utils.as_quaternion(0.0, e_t_XYZ)
-        * utils.conjugate(q_gamma_beta_alpha)
-    )
+    e_t_XYZ_gamma_beta_alpha = utils.rotate(e_t_XYZ, q_gamma_beta_alpha)
     q_rho = utils.as_rotation_quaternion(rho, -e_t_XYZ_gamma_beta_alpha)
 
     # Construct the tilt rotation quaternion
-    q_rho_gamma_beta_alpha = q_rho * q_gamma_beta_alpha
-    e_r_XYZ_rho_gamma_beta_alpha = utils.as_vector(
-        q_rho_gamma_beta_alpha
-        * utils.as_quaternion(0.0, e_r_XYZ)
-        * utils.conjugate(q_rho_gamma_beta_alpha)
-    )
+    q_rho_gamma_beta_alpha = utils.multiply(q_rho, q_gamma_beta_alpha)
+    e_r_XYZ_rho_gamma_beta_alpha = utils.rotate(e_r_XYZ, q_rho_gamma_beta_alpha)
     q_tau = utils.as_rotation_quaternion(tau, e_r_XYZ_rho_gamma_beta_alpha)
 
     # Compute the orthogonal transformation matrix from the XYZ to the
     # rst coordinate system
-    q_tau_rho_gamma_beta_alpha = q_tau * q_rho_gamma_beta_alpha
-    e_r_XYZ_tau_rho_gamma_beta_alpha = utils.as_vector(
-        q_tau_rho_gamma_beta_alpha
-        * utils.as_quaternion(0.0, e_r_XYZ)
-        * utils.conjugate(q_tau_rho_gamma_beta_alpha)
-    )
-    e_s_XYZ_tau_rho_gamma_beta_alpha = utils.as_vector(
-        q_tau_rho_gamma_beta_alpha
-        * utils.as_quaternion(0.0, e_s_XYZ)
-        * utils.conjugate(q_tau_rho_gamma_beta_alpha)
-    )
-    e_t_XYZ_tau_rho_gamma_beta_alpha = utils.as_vector(
-        q_tau_rho_gamma_beta_alpha
-        * utils.as_quaternion(0.0, e_t_XYZ)
-        * utils.conjugate(q_tau_rho_gamma_beta_alpha)
-    )
+    q_tau_rho_gamma_beta_alpha = utils.multiply(q_tau, q_rho_gamma_beta_alpha)
+    e_r_XYZ_tau_rho_gamma_beta_alpha = utils.rotate(e_r_XYZ, q_tau_rho_gamma_beta_alpha)
+    e_s_XYZ_tau_rho_gamma_beta_alpha = utils.rotate(e_s_XYZ, q_tau_rho_gamma_beta_alpha)
+    e_t_XYZ_tau_rho_gamma_beta_alpha = utils.rotate(e_t_XYZ, q_tau_rho_gamma_beta_alpha)
     E_XYZ_to_rst = np.row_stack(
         (
             e_r_XYZ_tau_rho_gamma_beta_alpha,
@@ -400,9 +364,7 @@ def calculateCameraPositionB():
     a_h = currentPlane["altitude"]  # [m]
     # currentPlane["altitudeTime"]
     a_track = currentPlane["track"]  # [deg]
-    a_ground_speed = (
-        currentPlane["groundSpeed"]
-    )  # [m/s]
+    a_ground_speed = currentPlane["groundSpeed"]  # [m/s]
     a_vertical_rate = currentPlane["verticalRate"]  # [m/s]
     # currentPlane["icao24"]
     # currentPlane["type"]
@@ -463,7 +425,9 @@ def calculateCameraPositionB():
     )
     r_uvw_a_1_t = np.matmul(E_XYZ_to_uvw, r_XYZ_a_1_t)
     rho = math.degrees(math.atan2(r_uvw_a_1_t[0], r_uvw_a_1_t[1]))  # [deg]
-    tau = math.degrees(math.atan2(r_uvw_a_1_t[2], np.linalg.norm(r_uvw_a_1_t[0:2])))  # [deg]
+    tau = math.degrees(
+        math.atan2(r_uvw_a_1_t[2], np.linalg.norm(r_uvw_a_1_t[0:2]))
+    )  # [deg]
     cameraPan = rho
     cameraTilt = tau
 
@@ -770,17 +734,12 @@ def main():
         help="The zoom setting for the camera (0-9999)",
         default=9999,
     )
+    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
     parser.add_argument(
-        "-v", 
-        "--verbose", 
-        action="store_true", 
-        help="Verbose output"
-    )
-    parser.add_argument(
-        '-f', 
-        '--flat-file-structure', 
-        action='store_true', 
-        help="Use a flat file structure (all images saved to ./) rather than organizing images in folder by plane type."
+        "-f",
+        "--flat-file-structure",
+        action="store_true",
+        help="Use a flat file structure (all images saved to ./) rather than organizing images in folder by plane type.",
     )
 
     args = parser.parse_args()

@@ -131,14 +131,14 @@ def coordinate_distance_3d(
     Returns:
         float -- Distance in meters
     """
-    R = 6371 # Radius of the earth in km
+    R = 6371  # Radius of the earth in km
     dLat = deg2rad(lat2 - lat1)
     dLon = deg2rad(lon2 - lon1)
     a = math.sin(dLat / 2) * math.sin(dLat / 2) + math.cos(deg2rad(lat1)) * math.cos(
         deg2rad(lat2)
     ) * math.sin(dLon / 2) * math.sin(dLon / 2)
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    d = R * c * 1000 #  Distance in m
+    d = R * c * 1000  #  Distance in m
     # return d
     # logging.info("Alt1: " + str(alt1) + " Alt2: " + str(alt2))
     alt_diff = abs(alt1 - alt2)
@@ -160,14 +160,14 @@ def coordinate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> f
     Returns:
         float -- Distance in meters
     """
-    R = 6371 # Radius of the earth in km
+    R = 6371  # Radius of the earth in km
     dLat = deg2rad(lat2 - lat1)
     dLon = deg2rad(lon2 - lon1)
     a = math.sin(dLat / 2) * math.sin(dLat / 2) + math.cos(deg2rad(lat1)) * math.cos(
         deg2rad(lat2)
     ) * math.sin(dLon / 2) * math.sin(dLon / 2)
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    d = R * c * 1000 #  Distance in m
+    d = R * c * 1000  #  Distance in m
     return d
 
 
@@ -274,9 +274,9 @@ def calc_travel_3d(current_plane, lead_s: float):
     # alt_age_s = alt_age.total_seconds() + lead_s
     alt_age_s = lead_s
 
-    R = float(6371) # Radius of the Earth in km
+    R = float(6371)  # Radius of the Earth in km
     brng = math.radians(heading)  # Bearing is 90 degrees converted to radians.
-    d = float((lat_lon_age_s * speed_mps) / 1000.0) # Distance in km
+    d = float((lat_lon_age_s * speed_mps) / 1000.0)  # Distance in km
 
     lat1 = math.radians(lat)  # Current lat point converted to radians
     lon1 = math.radians(lon)  # Current long point converted to radians
@@ -509,8 +509,7 @@ def as_rotation_quaternion(d_omega, u):
         A rotation quaternion with the specified angle and direction
     """
     r_omega = math.radians(d_omega)
-    v = [math.sin(r_omega / 2) * e for e in u]
-    return np.append(math.cos(r_omega / 2), v)
+    return np.append(math.cos(r_omega / 2), math.sin(r_omega / 2) * u)
 
 
 def as_vector(q):
@@ -545,15 +544,7 @@ def conjugate(q):
     numpy.ndarray
         The conjugated quaternion
     """
-    # Scalar and vector part of q
-    q_s = q[0]
-    q_v = q[1:]
-
-    # Scalar and vector part of r = q⁻¹
-    r_s = q_s
-    r_v = -q_v
-
-    return np.append(r_s, r_v)
+    return np.append(q[0], -q[1:])
 
 
 def multiply(p, q):
@@ -571,19 +562,10 @@ def multiply(p, q):
     numpy.ndarray
         The product quaternion
     """
-    # Scalar and vector part of p
-    p_s = p[0]
-    p_v = p[1:]
-
-    # Scalar and vector part of q
-    q_s = q[0]
-    q_v = q[1:]
-
-    # Scalar and vector part of r
-    r_s = p_s * q_s - np.dot(p_v, q_v)
-    r_v = p_s * q_v + q_s * p_v + np.cross(p_v, q_v)
-
-    return np.append(r_s, r_v)
+    return np.append(
+        p[0] * q[0] - np.dot(p[1:], q[1:]),
+        p[0] * q[1:] + q[0] * p[1:] + np.cross(p[1:], q[1:]),
+    )
 
 
 def rotate(v, q):
@@ -601,9 +583,7 @@ def rotate(v, q):
     numpy.ndarray
         The rotated vector
     """
-    p = np.append(0, v)
-    r = multiply(multiply(q, p), conjugate(q))
-    return r[1:]
+    return multiply(multiply(q, np.append(0, v)), conjugate(q))[1:]
 
 
 def compute_great_circle_distance(varphi_1, lambda_1, varphi_2, lambda_2):
