@@ -72,12 +72,12 @@ class TestCameraModule:
             """Compute the quaternion norm."""
             return math.sqrt((q * q.conjugate()).w)
 
-        assert qnorm(q_alpha_act - q_alpha_exp) < PRECISION
-        assert qnorm(q_beta_act - q_beta_exp) < PRECISION
-        assert qnorm(q_gamma_act - q_gamma_exp) < PRECISION
+        assert np.linalg.norm(q_alpha_act - q_alpha_exp) < PRECISION
+        assert np.linalg.norm(q_beta_act - q_beta_exp) < PRECISION
+        assert np.linalg.norm(q_gamma_act - q_gamma_exp) < PRECISION
         assert np.linalg.norm(E_XYZ_to_uvw_act - E_XYZ_to_uvw_exp) < PRECISION
-        assert qnorm(q_rho_act - q_rho_exp) < PRECISION
-        assert qnorm(q_tau_act - q_tau_exp) < PRECISION
+        assert np.linalg.norm(q_rho_act - q_rho_exp) < PRECISION
+        assert np.linalg.norm(q_tau_act - q_tau_exp) < PRECISION
         assert np.linalg.norm(E_XYZ_to_rst_act - E_XYZ_to_rst_exp) < PRECISION
 
     def test_calculateCameraPositionB(self):
@@ -254,34 +254,47 @@ class TestUtilsModule:
     @pytest.mark.parametrize(
         "s, v, q_exp",
         [
-            (0.0, [1.0, 2.0, 3.0], np.quaternion(0.0, 1.0, 2.0, 3.0)),
-            (0.0, np.array([1.0, 2.0, 3.0]), np.quaternion(0.0, 1.0, 2.0, 3.0)),
+            (0.0, [1.0, 2.0, 3.0], np.array([0.0, 1.0, 2.0, 3.0])),
+            (0.0, np.array([1.0, 2.0, 3.0]), np.array([0.0, 1.0, 2.0, 3.0])),
         ],
     )
     def test_as_quaternion(self, s, v, q_exp):
         q_act = utils.as_quaternion(s, v)
-        assert q_act.equal(q_exp)
+        assert np.equal(q_act, q_exp).any()
 
     # Construct rotation quaternions from a list or numpy.ndarray
     @pytest.mark.parametrize(
         "s, v, r_exp",
         [
-            (0.0, [1.0, 2.0, 3.0], np.quaternion(0.0, 1.0, 2.0, 3.0)),
-            (0.0, np.array([1.0, 2.0, 3.0]), np.quaternion(0.0, 1.0, 2.0, 3.0)),
+            (0.0, [1.0, 2.0, 3.0], np.array([1.0, 0.0, 0.0, 0.0])),
+            (0.0, np.array([1.0, 2.0, 3.0]), np.array([1.0, 0.0, 0.0, 0.0])),
+            (180.0, [1.0, 2.0, 3.0], np.array([0.0, 1.0, 2.0, 3.0])),
+            (180.0, np.array([1.0, 2.0, 3.0]), np.array([0.0, 1.0, 2.0, 3.0])),
         ],
     )
     def test_as_rotation_quaternion(self, s, v, r_exp):
         r_act = utils.as_rotation_quaternion(s, v)
-        assert r_act.equal(r_exp)
+        assert np.linalg.norm(r_act - r_exp) < PRECISION
 
     # Get the vector part of a vector quaternion
     @pytest.mark.parametrize(
         "q, v_exp",
         [
-            (np.quaternion(0.0, 1.0, 2.0, 3.0), np.array([1.0, 2.0, 3.0])),
+            (np.array([0.0, 1.0, 2.0, 3.0]), np.array([1.0, 2.0, 3.0])),
         ],
     )
     def test_as_vector(self, q, v_exp):
         v_act = utils.as_vector(q)
         assert np.linalg.norm(v_act - v_act) < PRECISION
+
+    # Conjugate a quaternion
+    @pytest.mark.parametrize(
+        "q, q_exp",
+        [
+            (np.array([0.0, 1.0, 2.0, 3.0]), np.array([0.0, -1.0, -2.0, -3.0])),
+        ],
+    )
+    def test_as_vector(self, q, q_exp):
+        q_act = utils.conjugate(q)
+        assert np.equal(q_act, q_exp).any()
 

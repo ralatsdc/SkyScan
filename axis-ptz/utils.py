@@ -481,15 +481,15 @@ def as_quaternion(s, v):
     ----------
     s : float
         A scalar value
-    v : list or numpy.ndarray
+    v : numpy.ndarray
         A vector of floats
 
     Returns
     -------
-    quaternion.quaternion
+    numpy.ndarray
         A quaternion with the specified scalar and vector parts
     """
-    return np.quaternion(s, v[0], v[1], v[2])
+    return np.append(s, v)
 
 
 def as_rotation_quaternion(d_omega, u):
@@ -500,7 +500,7 @@ def as_rotation_quaternion(d_omega, u):
     ----------
     d_omega : float
         An angle [deg]
-    u : list or numpy.ndarray
+    u : numpy.ndarray
         A vector of floats
 
     Returns
@@ -510,7 +510,7 @@ def as_rotation_quaternion(d_omega, u):
     """
     r_omega = math.radians(d_omega)
     v = [math.sin(r_omega / 2) * e for e in u]
-    return np.quaternion(math.cos(r_omega / 2), v[0], v[1], v[2])
+    return np.append(math.cos(r_omega / 2), v)
 
 
 def as_vector(q):
@@ -519,7 +519,7 @@ def as_vector(q):
 
     Parameters
     ----------
-    q : quaternion.quaternion
+    q : numpy.ndarray
         A vector quaternion
 
     Returns
@@ -527,9 +527,25 @@ def as_vector(q):
     numpy.ndarray
        A vector of floats
     """
-    if math.fabs(q.w) > 1e-12:
+    if math.fabs(q[0]) > 1e-12:
         raise Exception("Quaternion is not a vector quaternion")
-    return np.array([q.x, q.y, q.z])
+    return q[1:]
+
+
+def conjugate(q):
+    """Conjugate a quaternion.
+
+    Parameters
+    ----------
+    q : numpy.ndarray
+        A quaternion
+
+    Returns
+    -------
+    numpy.ndarray
+        The conjugated quaternion
+    """
+    return np.append(q[0], -q[1:])
 
 
 def compute_great_circle_distance(varphi_1, lambda_1, varphi_2, lambda_2):
