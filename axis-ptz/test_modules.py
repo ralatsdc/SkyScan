@@ -294,7 +294,42 @@ class TestUtilsModule:
             (np.array([0.0, 1.0, 2.0, 3.0]), np.array([0.0, -1.0, -2.0, -3.0])),
         ],
     )
-    def test_as_vector(self, q, q_exp):
+    def test_conjugate(self, q, q_exp):
         q_act = utils.conjugate(q)
         assert np.equal(q_act, q_exp).any()
 
+    # Multiply quaternions
+    @pytest.mark.parametrize(
+        "q, q_exp",
+        [
+            (np.array([0.0, 1.0, 2.0, 3.0]), np.array([0.0, -1.0, -2.0, -3.0])),
+        ],
+    )
+    def test_multiply(self, q, q_exp):
+        # TODO: Complete
+        q_act = utils.conjugate(q)
+        assert np.equal(q_act, q_exp).any()
+
+    # Rotate a vector by a rotation quaternion
+    @pytest.mark.parametrize(
+        "v, q, r_exp",
+        [
+            (np.array([0.0, 1.0, 2.0, 3.0]), np.array([0.0, -1.0, -2.0, -3.0])),
+        ],
+    )
+    def test_rotate(self, q, q_exp):
+        # TODO: Complete
+        q_act = utils.conjugate(q)
+        assert np.equal(q_act, q_exp).any()
+
+    # Compute the great-circle distance between two points on a sphere
+    @pytest.mark.parametrize(
+        "varphi_1, lambda_1, varphi_2, lambda_2, d_exp",
+        [
+            (np.array([0.0, 1.0, 2.0, 3.0]), np.array([0.0, -1.0, -2.0, -3.0])),
+        ],
+    )
+    def test_great_circle_distance(self, q, q_exp):
+        # TODO: Complete
+        q_act = utils.conjugate(q)
+        assert np.equal(q_act, q_exp).any()

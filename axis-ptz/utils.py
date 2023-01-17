@@ -545,7 +545,65 @@ def conjugate(q):
     numpy.ndarray
         The conjugated quaternion
     """
-    return np.append(q[0], -q[1:])
+    # Scalar and vector part of q
+    q_s = q[0]
+    q_v = q[1:]
+
+    # Scalar and vector part of r = q⁻¹
+    r_s = q_s
+    r_v = -q_v
+
+    return np.append(r_s, r_v)
+
+
+def multiply(p, q):
+    """Multiply quaternions.
+
+    Parameters
+    ----------
+    p : numpy.ndarray
+        A quaternion
+    q : numpy.ndarray
+        A quaternion
+
+    Returns
+    -------
+    numpy.ndarray
+        The product quaternion
+    """
+    # Scalar and vector part of p
+    p_s = p[0]
+    p_v = p[1:]
+
+    # Scalar and vector part of q
+    q_s = q[0]
+    q_v = q[1:]
+
+    # Scalar and vector part of r
+    r_s = p_s * q_s - np.dot(p_v, q_v)
+    r_v = p_s * q_v + q_s * p_v + np.cross(p_v, q_v)
+
+    return np.append(r_s, r_v)
+
+
+def rotate(v, q):
+    """Rotate a vector by a rotation quaternion.
+
+    Parameters
+    ----------
+    v : numpy.ndarray
+        A vector
+    q : numpy.ndarray
+        A rotation quaternion
+
+    Returns
+    -------
+    numpy.ndarray
+        The rotated vector
+    """
+    p = np.append(0, v)
+    r = multiply(multiply(q, p), conjugate(q))
+    return r[1:]
 
 
 def compute_great_circle_distance(varphi_1, lambda_1, varphi_2, lambda_2):
