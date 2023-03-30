@@ -235,18 +235,13 @@ class AutoCalibrator(BaseMQTTPubSub):
             )
             self.icao24 = icao24
 
-        # TODO: Review weighting scheme
         # Find tripod yaw, pitch, and roll that minimize pointing
         # error, and assign an exponentially weighted average for the
         # current yaw, pitch, and roll
         rho_epsilon, tau_epsilon = self._calculate_calibration_error(data)
-        alpha, beta, gamma, lead_time = self._minimize_pointing_error(
+        _alpha, _beta, _gamma, _lead_time = self._minimize_pointing_error(
             data, rho_epsilon, tau_epsilon
         )
-        self.alpha = (self.alpha + alpha) / 2.0
-        self.beta = (self.beta + beta) / 2.0
-        self.gamma = (self.gamma + gamma) / 2.0
-        self.lead_time = (self.lead_time + lead_time) / 2.0
 
         # Publish results to calibration topic which is subscribed to
         # by PTZ controller
@@ -421,29 +416,26 @@ class AutoCalibrator(BaseMQTTPubSub):
     @staticmethod
     def _calculate_pointing_error(
         parameters,
+        arguments,
         data,
-        rho_epsilon,
-        tau_epsilon,
     ):
         """Calculates the pointing error with given yaw, pitch, roll,
-        and lead time.
+        or lead time.
 
         Parameters
         ----------
-        parameters: List [int]
-            Minimization parameters: yaw, pitch, roll, [deg], and lead
+        parameters: List [float]
+            Minimization parameters: yaw, pitch, roll [deg], and lead
             time [s]
+        arguments: List [float]
+            Function arguments: rho_epsion, tau_epsilon
         data: Dict
             A Dict with calibration information
-        rho_epsilon : float
-            Pan error [degrees]
-        tau_epsilon : float
-            Tilt error [degrees]
 
         Returns
         -------
         ___ : float
-            Pointing error with given yaw, pitch, roll, and lead time
+            Pointing error with given parameters, arguments, and data
         """
         # Assign camera pan and tilt
         rho_c = data["camera"]["rho_c"]
@@ -501,6 +493,8 @@ class AutoCalibrator(BaseMQTTPubSub):
         # minimizes the difference will allow the camera to point at
         # the aircraft with minimum error. Of course, the same comment
         # applies for tilt.
+        rho_epsilon = arguments[0]
+        tau_epsilon = arguments[1]
         return math.sqrt(
             (rho_c + rho_epsilon - rho_a) ** 2 + (tau_c + tau_epsilon - tau_a) ** 2
         )
@@ -520,40 +514,34 @@ class AutoCalibrator(BaseMQTTPubSub):
 
         Returns
         -------
-        alpha_1: float
+        alpha: float
             Yaw that minimizes pointing error
-        beta_1: float
+        beta: float
             Pitch that minimizes pointing error
-        gamma_1: float
+        gamma: float
             Roll that minimizes pointing error
         """
-        # Use current yaw, pitch, roll, and lead time for initial
-        # minimization guess
-        x0 = [self.alpha, self.beta, self.gamma, self.lead_time]
+        # Use current yaw, pitch, roll, and lead time for initial minimization guess
+        x0 = np.array([self.alpha, self.beta, self.gamma, self.lead_time])
 
-        # Calculate alpha, beta, gamma, and lead time that minimizes
-        # pointing error
-        # alpha, beta, gamma, lead_time = fmin_bfgs(
-        #     self._calculate_pointing_error,
-        #     x0,
-        #     args=[data, rho_epsilon, tau_epsilon],
-        # )
+        # Calculate alpha, beta, gamma, and lead time that minimizes pointing error
+        # TODO: Make bounds a parameter
         res = minimize(
             self._calculate_pointing_error,
             x0,
-            args=(data, rho_epsilon, tau_epsilon),
+            args=([rho_epsilon, tau_epsilon], data),
             bounds=Bounds(
-                lb=[-0.5, -0.5, -0.5, 0.0],
-                ub=[0.5, 0.5, 0.5, 3.0]
+                lb=[-0.8, -0.8, -0.8, 0.25],
+                ub=[0.8, 0.8, 0.8, 4.0]
             )
         )
         if res.success:
             alpha = res.x[0]
             beta = res.x[1]
             gamma = res.x[2]
-            lead_time  = res.x[3]
+            lead_time = res.x[3]
             logger.info(
-                f"Minimization gives updated alpha: {alpha}, beta: {beta}, gamma: {gamma}, and lead time: {lead_time}"
+                f"Minimization gives updated alpha: {alpha}, beta: {beta}, gamma: {gamma}, lead_time: {lead_time}"
             )
         else:
             alpha = self.alpha
@@ -561,8 +549,14 @@ class AutoCalibrator(BaseMQTTPubSub):
             gamma = self.gamma
             lead_time = self.lead_time
             logger.info(
-                f"Minimization failed, using original alpha: {alpha}, beta: {beta}, gamma: {gamma}, and lead time: {lead_time}"
+                f"Minimization failed, using original alpha: {alpha}, beta: {beta}, gamma: {gamma}, and lead_time: {lead_time}"
             )
+        # TODO: Review weighting scheme
+        self.alpha = (self.alpha + alpha) / 2.0
+        self.beta = (self.beta + beta) / 2.0
+        self.gamma = (self.gamma + gamma) / 2.0
+        self.lead_time = (self.lead_time + lead_time) / 2.0
+
         return alpha, beta, gamma, lead_time
 
     def main(self: Any) -> None:
