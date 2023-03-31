@@ -251,9 +251,7 @@ class AutoCalibrator(BaseMQTTPubSub):
 
         # Find tripod yaw, pitch, roll and lead time that minimize
         # pointing error.
-        # TODO: Decide
-        # alpha, beta, gamma, lead_time = self._minimize_pointing_error()
-        alpha, beta, gamma = self._minimize_pointing_error()
+        alpha, beta, gamma, lead_time = self._minimize_pointing_error()
 
         # Clear pointing error data dictionaries and corresponding pan
         # and tilt errors
@@ -267,8 +265,7 @@ class AutoCalibrator(BaseMQTTPubSub):
         self.alpha = (self.alpha + alpha) / 2.0
         self.beta = (self.beta + beta) / 2.0
         self.gamma = (self.gamma + gamma) / 2.0
-        # TODO: Decide
-        # self.lead_time = (self.lead_time + lead_time) / 2.0
+        self.lead_time = (self.lead_time + lead_time) / 2.0
 
         # Publish results to calibration topic which is subscribed to
         # by PTZ controller
@@ -496,11 +493,10 @@ class AutoCalibrator(BaseMQTTPubSub):
                 e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, 0.0, 0.0
             )
 
+            # TODO: Remove? Then lead time is not needed.
             # Compute position in the topocentric (ENz) coordinate system
             # of the aircraft relative to the tripod at time one
-            # TODO: Decide
-            # lead_time = parameters[3]
-            lead_time = self.lead_time
+            lead_time = parameters[3]
             r_ENz_a_1_t = (
                 np.array(data["aircraft"]["r_ENz_a_0_t"])
                 + np.array(data["aircraft"]["v_ENz_a_0_t"]) * (
@@ -559,17 +555,11 @@ class AutoCalibrator(BaseMQTTPubSub):
         """
         # Use current yaw, pitch, roll, and lead time for initial
         # minimization guess
-        # TODO: Decide
-        # x0 = [self.alpha, self.beta, self.gamma, self.lead_time]
-        x0 = [self.alpha, self.beta, self.gamma]
+        x0 = [self.alpha, self.beta, self.gamma, self.lead_time]
 
+        # TODO: Make bounds a parameter
         # Calculate alpha, beta, gamma, and lead time that minimizes
         # pointing error
-        # alpha, beta, gamma, lead_time = fmin_bfgs(
-        #     self._calculate_pointing_error,
-        #     x0,
-        #     args=[data, rho_epsilon, tau_epsilon],
-        # )
         res = minimize(
             self._calculate_pointing_error,
             x0,
@@ -583,9 +573,7 @@ class AutoCalibrator(BaseMQTTPubSub):
             alpha = res.x[0]
             beta = res.x[1]
             gamma = res.x[2]
-            # TODO: Decide
-            # lead_time  = res.x[3]
-            lead_time = self.lead_time
+            lead_time  = res.x[3]
             logger.info(
                 f"Minimization gives updated alpha: {alpha}, beta: {beta}, gamma: {gamma}, and lead time: {lead_time}"
             )
